@@ -1,15 +1,16 @@
 // js/config.js
 const firebaseConfig = {
-  apiKey: "AIzaSyCsBIJDvl28Vz3Y5zqkijUd8r6_rbsRJk8",
- authDomain: "almasria-catalog.firebaseapp.com",
- databaseURL: "https://almasria-catalog-default-rtdb.firebaseio.com",
- projectId: "almasria-catalog",
- storageBucket: "almasria-catalog.firebasestorage.app",
- messagingSenderId: "773484299004",
- appId: "1:773484299004:web:4abf54045950c051554d79"
+  apiKey: "AIzaSyAp-5-zMugDj6XGpBe25u9jvY_Gc1HnOfs",
+  authDomain: "almasria-catalog-f907b.firebaseapp.com",
+  projectId: "almasria-catalog-f907b",
+  storageBucket: "almasria-catalog-f907b.firebasestorage.app",
+  messagingSenderId: "16539021900",
+  appId: "1:16539021900:web:a89fc759e398daebadfae9"
 };
+
 
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
+
