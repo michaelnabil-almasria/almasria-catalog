@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Al-Masria Doors</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:,">
+</head>
+<!-- WhatsApp Floating Button -->
+<a href="https://wa.me/+201151727374?text=Hello,%20I%20want%20to%20order%20doors" 
+   target="_blank" class="whatsapp-float">
+   ORDER NOW
+</a>
+
+<body>
+  <!-- Side Menu -->
+  <div class="sidebar" id="sidebar">
+    <div class="menu-item active" data-section="stock">Door Models Stock List</div>
+    <div class="menu-item" data-section="door_models">Album "Door Models"</div>
+    <div class="menu-item" data-section="factory">Album "Factory Images"</div>
+  </div>
+  <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+
+  <div class="main-content">
+    <header>
+      <img src="https://i.ibb.co/0pyfq4q4/logo.jpg" alt="Logo" class="logo">
+      <h1 id="pageTitle">Door Models Stock List</h1>
+    </header>
+
+    <div class="container">
+      <div id="content"></div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="js/config.js"></script>
+  <script>
+    const sidebar = document.getElementById('sidebar');
+    const content = document.getElementById('content');
+    const pageTitle = document.getElementById('pageTitle');
+
+    function toggleMenu() {
+      sidebar.classList.toggle('open');
+    }
+
+    document.querySelectorAll('.menu-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        loadSection(item.dataset.section);
+        sidebar.classList.remove('open');
+      });
+    });
+
+    function loadSection(section) {
+      pageTitle.textContent = document.querySelector(`[data-section="${section}"]`).textContent;
+      content.innerHTML = '<p style="text-align:center;color:#f0d9b5;padding:50px">Loading...</p>';
+
+      if (section === 'stock') {
+        loadStock();
+      } else {
+        loadAlbum(section);
+      }
+    }
+
+    function loadStock() {
+  db.ref('items').on('value', snap => {
+    content.innerHTML = '';
+    const data = snap.val() || {};
+    Object.values(data).forEach(item => {
+      const right = item.right || 0;
+      const left = item.left || 0;
+      const total = right + left;
+      if (total > 0) {
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.innerHTML = `
+          <div class="image-wrapper"><img src="${item.image}" loading="lazy" /></div>
+          <div class="info">
+            <div class="code">Code: <strong>${item.serial}</strong></div>
+            <div class="stock-container">
+              <div class="stock-block">
+                <div class="label">Right</div>
+                <div class="number">${right}</div>
+              </div>
+              <div class="stock-block">
+                <div class="label">Left</div>
+                <div class="number">${left}</div>
+              </div>
+            </div>
+            <div class="total-available">Total Available: ${total}</div>
+          </div>
+        `;
+        content.appendChild(div);
+      }
+    });
+  });
+}
+
+
+    function loadAlbum(albumName) {
+      db.ref('albums/' + albumName).on('value', snap => {
+        content.innerHTML = '';
+        const data = snap.val() || {};
+        Object.values(data).forEach(img => {
+          const div = document.createElement('div');
+          div.className = 'album-item';
+          div.innerHTML = `<img src="${img.url}" loading="lazy" />`;
+          content.appendChild(div);
+        });
+      });
+    }
+
+    // Start with stock
+    // Load stock immediately
+loadSection('stock');
+
+// Firebase login (doesn't affect UI)
+firebase.auth().signInAnonymously();
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+

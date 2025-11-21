@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin - Al-Masria Doors</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:,">
+  <style>
+    body { background: #57070A; }
+    header { position: relative; text-align: center; padding: 25px 15px 20px; background: #57070A; }
+    .logout-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: #c0392b;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      display: none;
+    }
+    .sidebar {
+      position: fixed;
+      left: -280px;
+      top: 0;
+      width: 280px;
+      height: 100vh;
+      background: #3f0a0f;
+      padding-top: 120px;
+      transition: 0.3s;
+      z-index: 999;
+    }
+    .sidebar.open { left: 0; }
+    .menu-toggle {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 32px;
+      color: #f0d9b5;
+      cursor: pointer;
+      z-index: 1000;
+      display: none;
+    }
+    .menu-item {
+      padding: 22px 25px;
+      color: #f0d9b5;
+      font-size: 1.2rem;
+      cursor: pointer;
+      border-bottom: 1px solid #6a0d15;
+    }
+    .menu-item.active, .menu-item:hover { background: #6a0d15; }
+    .main-content { transition: 0.3s; }
+    .sidebar.open ~ .main-content { margin-left: 280px; }
+    .add-card {
+      background: white;
+      padding: 30px;
+      border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      max-width: 500px;
+      margin: 30px auto;
+      text-align: center;
+      color: #333;
+    }
+    .add-card h2 { color: #57070A; margin-bottom: 25px; }
+    .add-card input {
+      width: 100%;
+      padding: 15px;
+      margin: 12px 0;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+      font-size: 1.1rem;
+    }
+.add-card button {
+      width: 100%;
+      padding: 15px;
+      background: #c0392b;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+    .stock-control {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 30px;
+      margin: 20px 0;
+      font-size: 1.6rem;
+    }
+    .stock-control div { text-align: center; }
+    .stock-control button {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #57070A;
+      color: white;
+      font-size: 2.2rem;
+      border: none;
+      cursor: pointer;
+    }
+    .total-available {
+      font-size: 1.7rem;
+      font-weight: bold;
+      color: #57070A;
+      background: #ffefc9;
+      padding: 12px 30px;
+      border-radius: 30px;
+      margin: 15px 0;
+      display: inline-block;
+    }
+    .delete-btn {
+      width: 100%;
+      padding: 14px;
+      background: #c0392b;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <!-- Side Menu -->
+  <div class="sidebar" id="sidebar">
+    <div class="menu-item active" data-section="stock">Stock Management</div>
+    <div class="menu-item" data-section="door_models">Album "Door Models"</div>
+    <div class="menu-item" data-section="factory">Album "Factory Images"</div>
+  </div>
+  <div class="menu-toggle" id="menuToggle" onclick="toggleMenu()">☰</div>
+
+  <div class="main-content">
+    <header>
+      <img src="https://i.ibb.co/0pyfq4q4/logo.jpg" alt="Logo" class="logo">
+      <h1 id="pageTitle">Admin - Door Models Stock List</h1>
+      <button class="logout-btn" id="logoutBtn" onclick="logout()">Logout</button>
+    </header>
+
+    <div class="container">
+      <!-- Login Form -->
+     <div id="login-form" class="add-card" style="max-width:400px;margin:60px auto;">
+  <h2 style="color:#57070A;margin-bottom:25px">Admin Login</h2>
+
+  <input type="email" id="email" placeholder="Email" value="admin@almasria.com" />
+  <input type="password" id="password" placeholder="Password" value="Almasria123!" />
+
+  <button onclick="login()">Login</button>
+</div>
+
+      </div>
+
+      <!-- Admin Content -->
+      <div id="adminContent" style="display:none"></div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="js/config.js"></script>
+  <script>
+    const loginForm = document.getElementById('login-form');
+    const adminContent = document.getElementById('adminContent');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
+    const pageTitle = document.getElementById('pageTitle');
+
+    function toggleMenu() {
+      sidebar.classList.toggle('open');
+    }
+
+    document.querySelectorAll('.menu-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        const section = item.dataset.section;
+        pageTitle.textContent = 'Admin - ' + item.textContent;
+        loadSection(section);
+      });
+    });
+
+    function loadSection(section) {
+      adminContent.innerHTML = '';
+      if (section === 'stock') {
+        adminContent.innerHTML = `
+          <div class="add-card">
+            <h2>Add New Door Model</h2>
+            <input type="text" id="new-serial" placeholder="Code (e.g. T0001)" />
+            <input type="text" id="new-image" placeholder="Image URL" />
+            <button onclick="addStockItem()">Add Item</button>
+          </div>
+          <div id="stockList"></div>
+        `;
+        loadStock();
+      } else {
+        adminContent.innerHTML = `
+          <div class="add-card">
+            <h2>Add Image to ${section === 'door_models' ? 'Door Models' : 'Factory Images'}</h2>
+            <input type="text" id="albumUrl" placeholder="Image URL" />
+            <button onclick="addAlbumImage('${section}')">Add Image</button>
+          </div>
+          <div class="album-grid" id="albumGrid"></div>
+        `;
+        loadAlbum(section);
+      }
+    }
+
+    function addStockItem() {
+      const serial = document.getElementById('new-serial').value.trim().toUpperCase();
+      const image = document.getElementById('new-image').value.trim();
+      if (!serial || !image) return alert('Fill code and image');
+      db.ref('items/' + serial).set({serial, image, right:0, left:0});
+      document.getElementById('new-serial').value = '';
+      document.getElementById('new-image').value = '';
+    }
+
+    function addAlbumImage(album) {
+      const url = document.getElementById('albumUrl').value.trim();
+      if (!url) return alert('Enter image URL');
+      db.ref('albums/' + album).push({url});
+      document.getElementById('albumUrl').value = '';
+    }
+
+    function loadStock() {
+      const list = document.getElementById('stockList');
+      db.ref('items').on('value', snap => {
+        list.innerHTML = '';
+        const data = snap.val() || {};
+        Object.keys(data).forEach(key => {
+          const item = data[key];
+          const right = item.right || 0;
+          const left = item.left || 0;
+          const div = document.createElement('div');
+          div.className = 'item';
+          div.innerHTML = `
+            <div class="image-wrapper"><img src="${item.image}" loading="lazy" /></div>
+            <div class="info">
+              <div class="code">Code: <strong>${item.serial}</strong></div>
+              <div class="stock-control">
+                <div>
+                  <div style="color:#57070A;font-weight:bold">Right (R)</div>
+                  <button onclick="updateStock('${key}', 'right', -1)">−</button>
+                  <span>${right}</span>
+                  <button onclick="updateStock('${key}', 'right', 1)">+</button>
+                </div>
+                <div>
+                  <div style="color:#57070A;font-weight:bold">Left (L)</div>
+                  <button onclick="updateStock('${key}', 'left', -1)">−</button>
+                  <span>${left}</span>
+                  <button onclick="updateStock('${key}', 'left', 1)">+</button>
+                </div>
+              </div>
+              <div class="total-available">Total Available: ${right + left}</div>
+              <button class="delete-btn" onclick="deleteItem('${key}')">Delete Item</button>
+            </div>
+          `;
+          list.appendChild(div);
+        });
+      });
+    }
+
+    function loadAlbum(album) {
+      const grid = document.getElementById('albumGrid');
+      db.ref('albums/' + album).on('value', snap => {
+        grid.innerHTML = '';
+        const data = snap.val() || {};
+        Object.values(data).forEach(img => {
+          const div = document.createElement('div');
+          div.className = 'album-item';
+          div.innerHTML = `<img src="${img.url}" loading="lazy" />`;
+          grid.appendChild(div);
+        });
+      });
+    }
+
+    window.updateStock = (id, side, change) => db.ref('items/' + id).transaction(i => i ? {...i, [side]: Math.max(0, (i[side] || 0) + change)} : i);
+    window.deleteItem = id => confirm('Delete forever?') && db.ref('items/' + id).remove();
+
+    // Login
+    window.login = () => {
+      const email = document.getElementById('email').value.trim();
+      const pass = document.getElementById('password').value;
+      if (email !== 'admin@almasria.com') {
+        alert('Only admin@almasria.com allowed');
+        return;
+      }
+      auth.signInWithEmailAndPassword(email, pass)
+        .then(() => {
+          loginForm.style.display = 'none';
+          adminContent.style.display = 'block';
+          logoutBtn.style.display = 'block';
+          menuToggle.style.display = 'block';
+          loadSection('stock');
+        })
+        .catch(() => alert('Wrong password'));
+    };
+
+    window.logout = () => {
+      auth.signOut();
+      loginForm.style.display = 'block';
+      adminContent.style.display = 'none';
+      logoutBtn.style.display = 'none';
+      menuToggle.style.display = 'none';
+      sidebar.classList.remove('open');
+    };
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
